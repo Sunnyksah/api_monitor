@@ -1,0 +1,29 @@
+monitors:
+  - name: "USD to EUR Rate"
+    enabled: true
+    url: "https://open.er-api.com/v6/latest/USD"
+    interval_minutes: 2
+    value_path: "rates.EUR"
+    alert_rules:
+      spike_percent: 1.0
+      min_value: 0.80
+      max_value: 1.20
+
+  - name: "USD to GBP Rate"
+    enabled: true
+    url: "https://open.er-api.com/v6/latest/USD"
+    interval_minutes: 2
+    value_path: "rates.GBP"
+    alert_rules:
+      spike_percent: 1.0
+      min_value: 0.60
+      max_value: 1.00
+
+  - name: "Open Brewery Count"
+    enabled: true
+    url: "https://api.openbrewerydb.org/v1/breweries/meta"
+    interval_minutes: 5
+    value_path: "total"
+    alert_rules:
+      spike_percent: 5.0
+      zscore_threshold: 2.5

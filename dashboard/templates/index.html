@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Monitor Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap');
+  :root {
+    --bg: #0a0e1a; --surface: #111827; --border: #1f2d3d;
+    --green: #00ff88; --red: #ff4466; --yellow: #ffd700;
+    --blue: #4488ff; --text: #e2e8f0; --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; padding: 2rem; }
+  header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; }
+  header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden; }
+  .card::before { content:''; position:absolute; top:0;left:0;right:0; height:3px; background: var(--blue); }
+  .card.status-error::before { background: var(--red); }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+  .card-name { font-weight: 700; font-size: 1rem; }
+  .badge { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .badge.ok { background: rgba(0,255,136,.15); color: var(--green); }
+  .badge.error { background: rgba(255,68,102,.15); color: var(--red); }
+  .badge.pending { background: rgba(255,215,0,.15); color: var(--yellow); }
+  .value { font-size: 2.2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin: 0.5rem 0; letter-spacing: -1px; }
+  .meta { font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .sparkline { margin-top: 1rem; height: 40px; width: 100%; }
+  svg.spark line { stroke: var(--blue); stroke-width: 1.5; opacity: 0.7; }
+  svg.spark polyline { fill: none; stroke: var(--blue); stroke-width: 2; stroke-linejoin: round; }
+  .refresh { font-size: 0.75rem; color: var(--muted); margin-top: 2rem; text-align: center; font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<header>
+  <div class="dot"></div>
+  <h1>⚡ API Monitor Dashboard</h1>
+</header>
+<div class="grid">
+{% for m in monitors %}
+<div class="card status-{{ m.status }}">
+  <div class="card-header">
+    <span class="card-name">{{ m.name }}</span>
+    <span class="badge {{ m.status }}">{{ m.status.upper() }}</span>
+  </div>
+  <div class="value">
+    {% if m.current_value is not none %}
+      {{ "{:,.4g}".format(m.current_value) }}
+    {% else %}—{% endif %}
+  </div>
+  <div class="meta">
+    Every {{ m.interval }}min &nbsp;·&nbsp;
+    Last: {{ m.last_check[:19].replace('T',' ') if m.last_check else 'never' }} UTC
+  </div>
+  {% if m.history|length > 1 %}
+  <div class="sparkline">
+    <svg class="spark" viewBox="0 0 300 40" preserveAspectRatio="none" width="100%" height="40">
+      {% set vals = m.history | map(attribute='value') | select('ne', none) | list %}
+      {% if vals|length > 1 %}
+        {% set mn = vals|min %}
+        {% set mx = vals|max %}
+        {% set rng = (mx - mn) if mx != mn else 1 %}
+        {% set pts = [] %}
+        {% for v in vals %}
+          {% set x = (loop.index0 / (vals|length - 1)) * 290 + 5 %}
+          {% set y = 35 - ((v - mn) / rng) * 30 %}
+          {% if pts.append(x|string + ',' + y|string) %}{% endif %}
+        {% endfor %}
+        <polyline points="{{ pts|join(' ') }}"/>
+      {% endif %}
+    </svg>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+</div>
+<p class="refresh">Auto-refreshes every 30s · <a href="/api/status" style="color:var(--blue)">JSON API</a></p>
+<script>setTimeout(()=>location.reload(), 30000);</script>
+</body>
+</html>

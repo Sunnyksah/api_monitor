@@ -1,0 +1,17 @@
+# Secret credentials - NEVER commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Data and logs (auto-generated)
+data/history.json
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
